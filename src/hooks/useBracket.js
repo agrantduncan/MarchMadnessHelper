@@ -102,8 +102,12 @@ export function useBracket() {
 
       const oldWinner = slot.winner
 
-      // If same pick, deselect
-      if (oldWinner === teamId) return prev
+      // Clicking the already-selected winner → undo: clear winner + cascade downstream
+      if (oldWinner === teamId) {
+        let newSlots = clearDownstream(prev, slotKey, teamId)
+        newSlots[slotKey] = { ...newSlots[slotKey], winner: null }
+        return newSlots
+      }
 
       // Clear downstream for old winner if re-picking
       let newSlots = oldWinner ? clearDownstream(prev, slotKey, oldWinner) : { ...prev }
@@ -111,18 +115,10 @@ export function useBracket() {
       // Set winner
       newSlots[slotKey] = { ...newSlots[slotKey], winner: teamId }
 
-      // Advance to next slot
+      // Advance winner to next slot
       const next = getNextSlot(slotKey)
       if (next && newSlots[next.key]) {
-        // Remove old winner from next slot if present
         const nextSlot = newSlots[next.key]
-        const clearedNext = {
-          ...nextSlot,
-          [next.pos]: teamId,
-          // Clear winner if we're overwriting the slot they came from
-          winner: nextSlot.winner && nextSlot.winner !== teamId ? nextSlot.winner : null,
-        }
-        // Re-check: if the existing top/bottom at that pos was different, it stays as the opponent
         newSlots[next.key] = {
           ...nextSlot,
           [next.pos]: teamId,

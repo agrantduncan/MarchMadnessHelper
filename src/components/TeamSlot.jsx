@@ -17,14 +17,7 @@ export default function TeamSlot({ teamId, isWinner, isLoser, isSelected, onPick
 
   return (
     <motion.div
-      layout
-      animate={
-        isLoser
-          ? { opacity: 0.3, scale: 1 }
-          : isWinner
-          ? { opacity: 1, scale: 1 }
-          : { opacity: 1, scale: 1 }
-      }
+      animate={isLoser ? { opacity: 0.3 } : { opacity: 1 }}
       whileHover={{ scale: 1.03 }}
       whileTap={{ scale: 0.97 }}
       transition={{ duration: 0.15 }}
@@ -33,7 +26,7 @@ export default function TeamSlot({ teamId, isWinner, isLoser, isSelected, onPick
         if (!isLoser) onPick(teamId)
       }}
       className={`
-        h-7 flex items-center px-2 rounded cursor-pointer select-none border text-xs transition-colors
+        h-7 flex items-center px-2 rounded cursor-pointer select-none border text-xs transition-colors group relative
         ${isWinner
           ? 'bg-orange-500/20 border-orange-500/60 text-white font-semibold'
           : isLoser
@@ -45,8 +38,18 @@ export default function TeamSlot({ teamId, isWinner, isLoser, isSelected, onPick
         ${isSelected ? 'ring-1 ring-orange-400' : ''}
       `}
     >
-      <span className={`w-4 text-center mr-1.5 font-bold text-[10px] ${seedColor}`}>{team.seed}</span>
-      <span className="truncate max-w-[90px]">{team.name}</span>
+      {isWinner ? (
+        <>
+          <span className={`w-4 text-center mr-1.5 font-bold text-[10px] ${seedColor}`}>{team.seed}</span>
+          <span className="truncate flex-1">{team.name}</span>
+          <span className="w-4 text-center ml-1 text-[10px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">✕</span>
+        </>
+      ) : (
+        <>
+          <span className={`w-4 text-center mr-1.5 font-bold text-[10px] ${seedColor}`}>{team.seed}</span>
+          <span className="truncate max-w-[90px]">{team.name}</span>
+        </>
+      )}
     </motion.div>
   )
 }

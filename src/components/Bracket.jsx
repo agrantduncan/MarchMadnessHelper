@@ -1,101 +1,54 @@
+import { motion } from 'framer-motion'
+import { TEAMS } from '../data/teams'
 import Region from './Region'
 import FinalFour from './FinalFour'
+import TeamSlot from './TeamSlot'
 
-const REGION_LABELS = {
-  East: 'EAST',
-  West: 'WEST',
-  Midwest: 'MIDWEST',
-  South: 'SOUTH',
-}
+const BASE_HEIGHT = 64
 
 function RegionLabel({ name, side }) {
   return (
-    <div className={`text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ${side === 'right' ? 'text-right' : 'text-left'}`}>
-      {REGION_LABELS[name]}
+    <div className={`text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 ${side === 'right' ? 'text-right' : 'text-left'}`}>
+      {name}
     </div>
   )
 }
 
-export default function Bracket({ slots, onPick, onSelect, selectedTeam }) {
-  return (
-    <div className="overflow-x-auto pb-4">
-      <div className="inline-flex flex-col gap-0 min-w-max">
-        {/* Top row: East (left→right) | Final Four | West (right→left) */}
-        <div className="flex items-start gap-4">
-          {/* East — reads left to right */}
-          <div>
-            <RegionLabel name="East" side="left" />
-            <Region region="East" slots={slots} onPick={onPick} onSelect={onSelect} selectedTeam={selectedTeam} />
-          </div>
-
-          {/* Final Four center */}
-          <div className="mt-5">
-            <FinalFour slots={slots} onPick={onPick} onSelect={onSelect} selectedTeam={selectedTeam} />
-          </div>
-
-          {/* West — reads right to left (reverse columns) */}
-          <div>
-            <RegionLabel name="West" side="right" />
-            <WestRegion slots={slots} onPick={onPick} onSelect={onSelect} selectedTeam={selectedTeam} />
-          </div>
-        </div>
-
-        <div className="h-4" />
-
-        {/* Bottom row: Midwest (left→right) | spacer | South (right→left) */}
-        <div className="flex items-start gap-4">
-          <div>
-            <RegionLabel name="Midwest" side="left" />
-            <Region region="Midwest" slots={slots} onPick={onPick} onSelect={onSelect} selectedTeam={selectedTeam} />
-          </div>
-
-          {/* Spacer to align with center column above */}
-          <div style={{ visibility: 'hidden' }}>
-            <FinalFour slots={slots} onPick={onPick} onSelect={onSelect} selectedTeam={selectedTeam} />
-          </div>
-
-          <div>
-            <RegionLabel name="South" side="right" />
-            <WestRegion region="South" slots={slots} onPick={onPick} onSelect={onSelect} selectedTeam={selectedTeam} />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Reversed region: rounds go 4→1 (Elite 8 on left, R64 on right)
-function WestRegion({ region = 'West', slots, onPick, onSelect, selectedTeam }) {
-  const BASE_HEIGHT = 64
-  const rounds = [4, 3, 2, 1]
+// Reversed region — rounds shown 4→1 (Elite 8 closest to center)
+function ReversedRegion({ region, slots, onPick, onSelect, selectedTeam }) {
+  const TEAM_H = 28
 
   return (
-    <div className="flex items-start gap-1">
-      {rounds.map((round) => {
+    <div style={{ display: 'flex', alignItems: 'start' }}>
+      {[4, 3, 2, 1].map((round) => {
         const matchupCount = 8 / Math.pow(2, round - 1)
         const slotHeight = BASE_HEIGHT * Math.pow(2, round - 1)
-        const matchupKeys = Array.from({ length: matchupCount }, (_, i) => `${region}-r${round}-m${i}`)
+        const keys = Array.from({ length: matchupCount }, (_, i) => `${region}-r${round}-m${i}`)
 
         return (
-          <div key={round} className="flex flex-col" style={{ gap: 0 }}>
-            {matchupKeys.map((key) => {
+          <div key={round} style={{ display: 'flex', flexDirection: 'column' }}>
+            {keys.map((key) => {
               const slot = slots[key]
               if (!slot) return null
-
               const { top, bottom, winner } = slot
               const unpicked = !winner && top && bottom
+              const topY = slotHeight / 4
+              const botY = (3 * slotHeight) / 4
+              const midY = slotHeight / 2
 
               return (
-                <div key={key} style={{ height: slotHeight, display: 'flex', alignItems: 'center' }}>
-                  {/* Reversed matchup: connector on left, teams on right */}
-                  <div className="flex items-center">
-                    <svg width="12" height="32" className="flex-shrink-0">
-                      <line x1="12" y1="8" x2="6" y2="8" stroke="#374151" strokeWidth="1"/>
-                      <line x1="6" y1="8" x2="6" y2="24" stroke="#374151" strokeWidth="1"/>
-                      <line x1="6" y1="24" x2="12" y2="24" stroke="#374151" strokeWidth="1"/>
-                      <line x1="6" y1="16" x2="0" y2="16" stroke="#374151" strokeWidth="1"/>
-                    </svg>
-                    <div className="flex flex-col gap-0.5">
+                <div key={key} style={{ position: 'relative', height: slotHeight, display: 'flex', flexShrink: 0 }}>
+                  {/* Connector SVG on left side (reversed) */}
+                  <svg width="14" height={slotHeight} style={{ flexShrink: 0, overflow: 'visible' }}>
+                    <line x1="14" y1={topY} x2="7" y2={topY} stroke="#374151" strokeWidth="1" />
+                    <line x1="7" y1={topY} x2="7" y2={botY} stroke="#374151" strokeWidth="1" />
+                    <line x1="14" y1={botY} x2="7" y2={botY} stroke="#374151" strokeWidth="1" />
+                    <line x1="7" y1={midY} x2="0" y2={midY} stroke="#374151" strokeWidth="1" />
+                  </svg>
+
+                  {/* Teams column */}
+                  <div style={{ position: 'relative', width: 136, flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', top: topY - TEAM_H / 2, left: 0, right: 0 }}>
                       <ReversedSlot
                         teamId={top}
                         isWinner={winner === top}
@@ -105,6 +58,8 @@ function WestRegion({ region = 'West', slots, onPick, onSelect, selectedTeam }) 
                         onPick={(id) => onPick(key, id)}
                         onSelect={onSelect}
                       />
+                    </div>
+                    <div style={{ position: 'absolute', top: botY - TEAM_H / 2, left: 0, right: 0 }}>
                       <ReversedSlot
                         teamId={bottom}
                         isWinner={winner === bottom}
@@ -126,33 +81,26 @@ function WestRegion({ region = 'West', slots, onPick, onSelect, selectedTeam }) 
   )
 }
 
-import { motion } from 'framer-motion'
-import { TEAMS } from '../data/teams'
-
 function ReversedSlot({ teamId, isWinner, isLoser, isSelected, unpicked, onPick, onSelect }) {
   const team = teamId ? TEAMS[teamId] : null
-
   if (!team) {
     return (
       <div className="h-7 flex items-center px-2 rounded text-xs text-slate-600 bg-slate-900/30 border border-slate-800/50" style={{ minWidth: 120 }}>
-        <span className="truncate">TBD</span>
+        <span className="flex-1 truncate">TBD</span>
         <span className="w-4 text-center ml-1.5 text-[10px]">—</span>
       </div>
     )
   }
-
   const seedColor = team.seed <= 4 ? 'text-yellow-400' : team.seed <= 8 ? 'text-blue-400' : 'text-slate-400'
-
   return (
     <motion.div
-      layout
-      animate={isLoser ? { opacity: 0.3 } : { opacity: 1 }}
       whileHover={{ scale: 1.03 }}
       whileTap={{ scale: 0.97 }}
+      animate={isLoser ? { opacity: 0.3 } : { opacity: 1 }}
       transition={{ duration: 0.15 }}
       onClick={() => { onSelect(teamId); if (!isLoser) onPick(teamId) }}
       className={`
-        h-7 flex items-center px-2 rounded cursor-pointer select-none border text-xs transition-colors
+        h-7 flex items-center px-2 rounded cursor-pointer select-none border text-xs transition-colors group relative
         ${isWinner ? 'bg-orange-500/20 border-orange-500/60 text-white font-semibold'
           : isLoser ? 'bg-slate-900/20 border-slate-800/30 text-slate-600 line-through'
           : unpicked ? 'bg-slate-800/60 border-slate-700/60 text-slate-300 hover:border-orange-500/40 hover:bg-slate-700/60 animate-pulse'
@@ -161,8 +109,51 @@ function ReversedSlot({ teamId, isWinner, isLoser, isSelected, unpicked, onPick,
       `}
       style={{ minWidth: 120 }}
     >
-      <span className="truncate max-w-[90px]">{team.name}</span>
-      <span className={`w-4 text-center ml-1.5 font-bold text-[10px] ${seedColor}`}>{team.seed}</span>
+      <span className="flex-1 truncate">{team.name}</span>
+      {isWinner
+        ? <span className="w-4 text-center ml-1.5 text-[10px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">✕</span>
+        : <span className={`w-4 text-center ml-1.5 font-bold text-[10px] ${seedColor}`}>{team.seed}</span>
+      }
     </motion.div>
+  )
+}
+
+export default function Bracket({ slots, onPick, onSelect, selectedTeam }) {
+  const totalH = BASE_HEIGHT * 8
+
+  return (
+    <div className="overflow-x-auto pb-4">
+      <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 16 }}>
+        {/* Top: East → | FF | ← West */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+          <div>
+            <RegionLabel name="EAST" side="left" />
+            <Region region="East" slots={slots} onPick={onPick} onSelect={onSelect} selectedTeam={selectedTeam} />
+          </div>
+          <div style={{ marginTop: 20 }}>
+            <FinalFour slots={slots} onPick={onPick} onSelect={onSelect} selectedTeam={selectedTeam} />
+          </div>
+          <div>
+            <RegionLabel name="WEST" side="right" />
+            <ReversedRegion region="West" slots={slots} onPick={onPick} onSelect={onSelect} selectedTeam={selectedTeam} />
+          </div>
+        </div>
+
+        {/* Bottom: Midwest → | spacer | ← South */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+          <div>
+            <RegionLabel name="MIDWEST" side="left" />
+            <Region region="Midwest" slots={slots} onPick={onPick} onSelect={onSelect} selectedTeam={selectedTeam} />
+          </div>
+          <div style={{ visibility: 'hidden', marginTop: 20 }}>
+            <FinalFour slots={slots} onPick={onPick} onSelect={onSelect} selectedTeam={selectedTeam} />
+          </div>
+          <div>
+            <RegionLabel name="SOUTH" side="right" />
+            <ReversedRegion region="South" slots={slots} onPick={onPick} onSelect={onSelect} selectedTeam={selectedTeam} />
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
